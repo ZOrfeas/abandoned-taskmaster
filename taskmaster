@@ -54,8 +54,8 @@ class Taskmaster:
         
         helper = True
         while(helper):
-            name = input("Give the task a unique name: \n")
-            process = subprocess.run(['grep','-q',name,home+"/.tasksFile"])
+            name = input("Give the task a unique name(hopefully something other than 'exit'): \n")
+            process = subprocess.run(['grep','-q','"name": "'+name+'"',home+"/.tasksFile"])
             if process.returncode == 0: print("Task name exists, try another one")
             else: helper = False
         
@@ -131,12 +131,12 @@ class Taskmaster:
             if process.returncode == 1: print("Task name doesn't exist, try again")
             else: helper = False
         # deleterProcess = subprocess.run(['sed','-i',properString,home+"/.tasksFile"])
-        command = "sed -i '/"+taskToDelete+"/d' "+home+"/.tasksFile"
+        command = "sed -i '/\"name\": \""+taskToDelete+"\"/d' "+home+"/.tasksFile"
         os.system(command)
         print("Task successfully deleted")
 
     def today():
-        
+        print("mphka today")       
     def week():
         print("mphka week")
     def day():
