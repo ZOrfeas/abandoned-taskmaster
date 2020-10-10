@@ -1,6 +1,5 @@
 #!/usr/bin/python3
-import os,sys,subprocess,fileinput,json
-from datetime import datetime
+import os,sys,subprocess,fileinput,json,datetime
 from pathlib import Path
 
 home = str(Path.home())
@@ -56,11 +55,12 @@ class Taskmaster:
         while(helper):
             name = input("Give the task a unique name(hopefully something other than 'exit'): \n")
             process = subprocess.run(['grep','-q','"name": "'+name+'"',home+"/.tasksFile"])
-            if process.returncode == 0: print("Task name exists, try another one")
+            if process.returncode == 0 or name in ["mon","tue","wed","thu","fri","sat","sun"]: print("Task name exists or is forbidden, try another one")
             else: helper = False
         
         def recurringCreate(name):
             daysTimes = input("Specify when the task shall repeat separated by commas[e.g.(case insensitive) Mon|Tue|Wed|Thu|Fri|Sat|Sun 14:15, Tue 12:45...]: \n")
+            #splits daysTimes seperated by commas after lower-casing them, strips whitespace then splits days and times apart in two piece tuples
             daysTimes = list(map(lambda x:x.split(), list(map(lambda x:x.strip(), daysTimes.lower().split(',')))))
             description = input("Explain the task in more detail if you want to: \n")
             createdTask = {
@@ -78,11 +78,17 @@ class Taskmaster:
                 date = date.lower()
                 if (date not in ['today','tomorrow','the day after']) and not date.isnumeric():
                     try:
-                        datetime.strptime(date,"%d-%m-%Y")
+                        datetime.datetime.strptime(date,"%d-%m-%Y")
                     except ValueError:
                         print("Invalid input, try again")
                     else: dateHelper = False
                 else:
+                    if date == 'today': date = 0
+                    elif date == 'tomorrow': date = 1
+                    elif date == 'the day after': date = 2
+                    today = datetime.date.today()
+                    targetDate = today + datetime.timedelta(days=date)
+                    date = datetime.datetime.strftime(targetDate,"%d-%m-%Y")
                     dateHelper = False
             timeHelper = True
             while(timeHelper):
@@ -90,7 +96,7 @@ class Taskmaster:
                 time = time.lower()
                 if (time not in ['morning','noon','afternoon','evening','nighttime','']):
                     try:
-                        datetime.strptime(time,"%H:%M")
+                        datetime.datetime.strptime(time,"%H:%M")
                     except ValueError:
                         print("Invalid input, try again")
                     else: timeHelper = False
@@ -121,7 +127,7 @@ class Taskmaster:
                     line = json.dumps(taskToAdd)+"\n\n"
                     isDone = True
             sys.stdout.write(line)
-
+        print("Task successfully created")
     def remove():
         helper = True
         while(helper):
@@ -136,7 +142,18 @@ class Taskmaster:
         print("Task successfully deleted")
 
     def today():
-        print("mphka today")       
+        dateObject = datetime.date.today()
+        todaysDate = datetime.datetime.strftime(dateObject, "%d-%m-%Y")
+        todaysDay = datetime.datetime.strftime(dateObject,"%a").lower()
+        grepPatternRecurring = '"'+todaysDay+'"'
+        grepPatternOneOffs = '"'+todaysDate+'"'
+        processRecurring = subprocess.run(['grep',grepPatternRecurring,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
+        processOneOffs = subprocess.run(['grep',grepPatternOneOffs,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
+        todaysRecurring = processRecurring.stdout.splitlines()
+        todaysOneOffs = processOneOffs.stdout.splitlines()
+        # print(todaysRecurring)
+        # print(todaysOneOffs)
+
     def week():
         print("mphka week")
     def day():
