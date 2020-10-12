@@ -42,7 +42,24 @@ def longShortPicker(argument):
 
 
 class Taskmaster:
-        
+
+    def grepForDay(targetDateObject):
+        targetDate = datetime.datetime.strftime(targetDateObject, "%d-%m-%Y")
+        targetDay = datetime.datetime.strftime(targetDateObject, "%a").lower()
+
+        grepPatternRecurring = '"'+targetDay+'"'
+        grepPatternOneOffs = '"'+targetDate+'"'
+
+        processRecurring = subprocess.run(['grep',grepPatternRecurring,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
+        processOneOffs = subprocess.run(['grep',grepPatternOneOffs,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
+
+        targetRecurring = processRecurring.stdout.splitlines()
+        targetOneOffs = processOneOffs.stdout.splitlines()
+        targetRecurring = list(map(lambda x:json.loads(x),targetRecurring))
+        targetOneOffs = list(map(lambda x:json.loads(x),targetOneOffs))
+        return (targetRecurring, targetOneOffs)
+
+
     def printRecurring(recurringTask,nowDay):
         print(color.red+recurringTask["name"]+color.end)
         timesList = []
@@ -191,17 +208,7 @@ class Taskmaster:
         todaysDate = datetime.datetime.strftime(dateObject, "%d-%m-%Y")
         todaysDay = datetime.datetime.strftime(dateObject,"%a").lower()
 
-        grepPatternRecurring = '"'+todaysDay+'"'
-        grepPatternOneOffs = '"'+todaysDate+'"'
-
-        processRecurring = subprocess.run(['grep',grepPatternRecurring,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
-        processOneOffs = subprocess.run(['grep',grepPatternOneOffs,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
-
-        todaysRecurring = processRecurring.stdout.splitlines()
-        todaysOneOffs = processOneOffs.stdout.splitlines()
-        todaysRecurring = list(map(lambda x:json.loads(x),todaysRecurring))
-        todaysOneOffs = list(map(lambda x:json.loads(x),todaysOneOffs))
-
+        todaysRecurring,todaysOneOffs = Taskmaster.grepForDay(dateObject)
         
         print('')
         print("                 Today you need to                 ")
@@ -222,7 +229,18 @@ class Taskmaster:
         print('')
 
     def week():
-        print("mphka week")
+        todayDateObject = datetime.datetime.today()
+        weekTasks = []
+        for i in range(0,7):
+            targetDateObject = todayDateObject + datetime.timedelta(days=i)
+            weekTasks.append(grepForDay(targetDateObject))
+        maxVertical = 0
+        for day in weekTasks:
+            currDayTasksNr = len(weekTasks[day][0])+len(weekTasks[day][1])
+            if currDayTasksNr > maxVertical: maxVertical = currDayTasksNr
+        def sortOneDaysTasks(recurring,oneOffs):
+            print("kwstas")
+
     def day():
         dateHelper=True
         while(dateHelper):
@@ -248,13 +266,7 @@ class Taskmaster:
         grepPatternRecurring = '"'+targetDay+'"'
         grepPatternOneOffs = '"'+targetDate+'"'
 
-        processRecurring = subprocess.run(['grep',grepPatternRecurring,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
-        processOneOffs = subprocess.run(['grep',grepPatternOneOffs,home+"/.tasksFile"],stdout=subprocess.PIPE,universal_newlines=True)
-
-        targetRecurring = processRecurring.stdout.splitlines()
-        targetOneOffs = processOneOffs.stdout.splitlines()
-        targetRecurring = list(map(lambda x:json.loads(x),targetRecurring))
-        targetOneOffs = list(map(lambda x:json.loads(x),targetOneOffs))
+        targetRecurring,targetOneOffs = Taskmaster.grepForDay(targetDateObject)
         print('')
         if date == 1:
             print("                Tomorrow you need to                ")
