@@ -164,13 +164,36 @@ class Taskmaster:
                     taskToRet["cronAction"] = cls.askCronCommand()
                     possibleDescription = cls.eofSafeInput("Explain the task in more detail if you want:\n")
                     taskToRet["description"] = possibleDescription if possibleDescription!='' else None 
-    
-
+                else:
+                    taskToRet["description"] = suppliedArgs[1]
+            if nrOfSuppliedArgs == 3:
+                if suppliedArgs[1].isnumeric():
+                    taskToRet["cronActionMins"] = suppliedArgs[1]
+                    taskToRet["cronAction"] = suppliedArgs[2]
+                    possibleDescription = cls.eofSafeInput("Explain the task in more detail if you want:\n")
+                    taskToRet["description"] = possibleDescription if possibleDescription!='' else None
+                else:
+                    return None,3
+            if nrOfSuppliedArgs == 4:
+                if suppliedArgs[1].isnumeric():
+                    taskToRet["cronActionMins"] = suppliedArgs[1]
+                    taskToRet["cronAction"] = suppliedArgs[2]
+                    taskToRet["description"] = suppliedArgs[3]
+                else:
+                    return None,3
+            return taskToRet,-1
         @classmethod
         def promptOneOff(cls,suppliedArgs,wrapUpFunc=None):
-        
-        @classmethod
-        def 
+            taskToRet = {
+                "name":None,
+                "date":None,
+                "time":None,
+                "isDeadlined":None,
+                "cronActionMins":None,
+                "cronAction":None,
+                "description":None
+            }
+
     @classmethod
     def help(cls):
         cls.outputWriter.helpMessage()
