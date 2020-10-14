@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import sys,os,json,subprocess
+import sys,os,json,subprocess,datetime
 from pathlib import Path
 
 
@@ -96,7 +96,14 @@ class Taskmaster:
                 if wrapUpFunc: wrapUpFunc()
                 print("Exiting...")
                 sys.exit(0)
-                
+        @classmethod
+        def isProperTimeString(cls,timeStringToCheck):
+            try:
+                datetime.datetime.strptime(timeStringToCheck, "%H:%M")
+                return True
+            except ValueError:
+                return False
+        
         @classmethod
         def promptForTaskName(cls,wrapUpFunc=None):
             nameNotFound = True
@@ -118,13 +125,46 @@ class Taskmaster:
             return isRecurring
         @classmethod
         def promptRecurring(cls,suppliedArgs,wrapUpFunc=None):
+            taskToRet = {
+                "name":None,
+                "daysTimes":None,
+                "cronActionMins":None,
+                "cronAction":None,
+                "description":None
+            }
+            properDays = ['mon','tue','wed','thu','fri','sat','sun']
             nrOfSuppliedArgs = len(suppliedArgs)
             if nrOfSuppliedArgs == 0:
-                daysTimes = cls.eofSafeInput("When does this task repeat?(e.g.: Mon 10:10, thu 20:24, SAT 23:59, Tue):\n")
+                notYetFoundDays = True
+                while(True):
+                    daysTimes = cls.eofSafeInput("When does this task repeat?(e.g.: Mon 10:10, thu 20:24, SAT 23:59, Tue):\n")
+                    daysTimesSplitted = list(map(lambda x:x.split(), list(map(lambda x:x.strip(), daysTimes.lower().split(',')))))
+                    for i in daysTimesSplitted:
+                        if len(i)==0 or i[0] not in properDays or (len(i)==2 and not cls.isProperTimeString(i[1])):
+                            print("Invalid times/days, try again or press Ctrl-D to exit")
+                            continue
+                        else:
+                            notYetFoundDays = False
             else:
                 daysTimes = suppliedArgs[0]
-            daysTimesSplited = list(map(lambda x:x.split(), list(map(lambda x:x.strip(), daysTimes.lower().split(',')))))
-            #check validity
+                daysTimesSplitted = list(map(lambda x:x.split(), list(map(lambda x:x.strip(), daysTimes.lower().split(',')))))
+                for i in daysTimesSplitted:
+                    if len(i)==0 or i[0] not in properDays or (len(i)==2 and not cls.isProperTimeString(i[1])):
+                        return None,2
+            taskToRet["daysTimes"] = daysTimesSplitted
+            if nrOfSuppliedArgs == 1:
+                if cls.wantsCronAction():
+                    taskToRet["cronActionMins"] = cls.askCronMins()
+                    taskToRet["cronAction"] = cls.askCronCommand()
+                possibleDescription = cls.eofSafeInput("Explain the task in more detail if you want:\n")
+                taskToRet["description"] = possibleDescription if possibleDescription!='' else None
+            if nrOfSuppliedArgs == 2:
+                if suppliedArgs[1].isnumeric():
+                    taskToRet["cronActionMins"] = suppliedArgs[1]
+                    taskToRet["cronAction"] = cls.askCronCommand()
+                    possibleDescription = cls.eofSafeInput("Explain the task in more detail if you want:\n")
+                    taskToRet["description"] = possibleDescription if possibleDescription!='' else None 
+    
 
         @classmethod
         def promptOneOff(cls,suppliedArgs,wrapUpFunc=None):
@@ -139,34 +179,37 @@ class Taskmaster:
     def createTask(cls,creatorArguments):
         isRecurringArgs = ['recur','r','recurring']
         isOneOffArgs = ['once','o','oneoff']
-        
         isDeadlinedArgs = ['dl','deadlined','nodl']
+        
         argAmount = len(creatorArguments)
         if argAmount == 0:
             name = cls.inputReader.promptForTaskName()
             isRecurring = cls.inputReader.promptForIsRecurring()
-            taskToAdd = cls.inputReader.promptRecurring() if isRecurring else cls.inputReader.promptOneOff()
+            taskToAdd,error = cls.inputReader.promptRecurring() if isRecurring else cls.inputReader.promptOneOff()
         elif argAmount == 1:
             name = creatorArguments[0]
             isRecurring = cls.inputReader.getIsRecurring()
-            taskToAdd = cls.inputReader.promptRecurring() if isRecurring else cls.inputReader.promptOneOff()
+            taskToAdd,error = cls.inputReader.promptRecurring() if isRecurring else cls.inputReader.promptOneOff()
         else:
             name = creatorArguments[0]
             isRecurringCandidate =creatorArguments[1].lower()
             if isRecurringCandidate in isRecurringArgs:
                 isRecurring = isRecurringCandidate
-                taskToAdd = cls.inputReader.promptRecurring(creatorArguments[2:])
+                taskToAdd,error = cls.inputReader.promptRecurring(creatorArguments[2:])
             elif isRecurringCandidate in isOneOffArgs:
                 isRecurring = isRecurringCandidate
-                taskToAdd = cls.inputReader.promptOneOff(creatorArguments[2:])
+                taskToAdd,error = cls.inputReader.promptOneOff(creatorArguments[2:])
             else:
                 cls.outputWriter.wrongInputMessage(creatorArguments[1],'-c')
-                taskToAdd = None
+                return 1
         if taskToAdd is None:
+            cls.outputWriter.wrongInputMessage(creatorArguments[error],'-c')
             return 1
         elif isRecurring:
+            taskToAdd["name"]=name
             cls.FileWriter.addRecurring(taskToAdd)
         else:
+            taskToAdd["name"]=name
             cls.FileWriter.addOneOff(taskToAdd)
 
     @classmethod
