@@ -99,14 +99,73 @@ class Taskmaster:
                 sys.exit(0)
         @classmethod
         def isProperTimeString(cls,timeStringToCheck):
+            properTimesOfDay = ['morning','noon','afternoon','evening','night']
+            if timeStringToCheck not in properTimesOfDay:
+                try:
+                    datetime.datetime.strptime(timeStringToCheck, "%H:%M")
+                    return True
+                except ValueError:
+                    return False
+            else:
+                return True
+        @classmethod
+        def isProperDateString(cls,dateStringToCheck):
             try:
-                datetime.datetime.strptime(timeStringToCheck, "%H:%M")
+                datetime.datetime(dateStringToCheck, "%d-%m-%Y")
                 return True
             except ValueError:
                 return False
         @classmethod
-        def verifyRecurrArgs(cls,argsToCheck):
-            
+        def checkAndPrepDaysTimesString(cls,stringToCheck):
+            properDays = ['mon','tue','wed','thu','fri','sat','sun']
+            daysTimesSplitted = list(map(lambda x:x.split(), list(map(lambda x:x.strip(), stringToCheck.lower().split(',')))))
+            for i in daysTimesSplitted:
+                if len(i) == 0 or i[0] not in properDays or(len(i)==2 and not cls.isProperTimeString(i[1])):
+                    return None
+            return daysTimesSplitted
+        @classmethod
+        def verifyAndPrepRecurrArgs(cls,argsToCheck):
+            argAmount = len(argsToCheck)
+            if argAmount >= 1:
+                if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
+                    return False,argsToCheck[0]+'not a unique task name'
+            if argAmount >= 2:
+                daysTimes = cls.checkAndPrepDaysTimesString(argsToCheck[1])
+                if daysTimes is None:
+                    return False,argsToCheck[1]
+                else:
+                    argsToCheck[1] = daysTimes
+            if argAmount >= 3:
+                if not argsToCheck[2].isnumeric() and argAmount > 3:
+                    return False,argsToCheck[2]+'too many args'
+                else:
+                    argsToCheck[2] = int(argsToCheck[2])
+            return True,None
+        @classmethod
+        def verifyAndPrepOneOffArgs(cls,argsToCheck):
+            argAmount = len(argsToCheck)
+            if argAmount >= 1:
+                if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
+                    return False,argsToCheck[0]+'not a unique task name'
+            if argAmount >= 2:
+                if not cls.isProperDateString(argsToCheck[1]):
+                    return False,argsToCheck[1]
+            if argAmount >= 3:
+                if not cls.isProperTimeString(argsToCheck[2]):
+                    return False,argsToCheck[2]
+            if argAmount >= 4:
+                lowerCasedArg = argsToCheck[3].lower()
+                if lowerCasedArg not in ['y','n','yes','no']:
+                    return False,argsToCheck[3]
+                else:
+                    argsToCheck[3] = True if lowerCasedArg in ['y','yes'] else False
+            if argAmount >= 5:
+                if not argsToCheck[4].isnumeric() and argAmount > 5:
+                    return False,argsToCheck[4]
+                else:
+                    argsToCheck[4] = int(argsToCheck[4])
+            return True,None
+
     
         @classmethod
         def promptForTaskName(cls):
@@ -130,7 +189,6 @@ class Taskmaster:
         
         @classmethod
         def createRecurring(cls,suppliedArgs):
-            properDays = ['mon','tue','wed','thu','fri','sat','sun']
             taskToRet = {
                 "name":None,
                 "daysTimes":None,
@@ -138,6 +196,10 @@ class Taskmaster:
                 "cronAction":None,
                 "description":None
             }
+            argAmount = len(suppliedArgs)
+            taskToRet["name"] = cls.promptForTaskName() if argAmount < 1 else suppliedArgs[0]
+            taskToRet["daysTimes"] = cls.promptForDaysTimes() if argAmount < 2 else suppliedArgs[1]
+            
         @classmethod
         def createOneOff(cls,suppliedArgs):
             taskToRet = {
@@ -173,16 +235,19 @@ class Taskmaster:
                 cls.outputWriter.wrongInputMessage(creatorArguments[0],'-c')
                 return 1
         taskDetails = creatorArguments[1:]
-        argsOk,wrongArg = cls.inputReader.verifyRecurrArgs(taskDetails) if isRecurring else cls.inputReader.verifyOneOffArgs(taskDetails)
+        argsOk,wrongArg = cls.inputReader.verifyAndPrepRecurrArgs(taskDetails) if isRecurring else cls.inputReader.verifyAndPrepOneOffArgs(taskDetails)
         if not argsOk:
             cls.outputWriter.wrongInputMessage(wrongArg, '-c')
             return 1
         else:
             taskToAdd = cls.inputReader.createRecurring(taskDetails) if isRecurring else cls.inputReader.createOneOff(taskDetails)
         if isRecurring:
-            cls.FileWriter.addRecurring(taskToAdd)
+            if creatorArguments <= 1 or cls.outputWriter.askToAddRecurr(taskToAdd):
+                cls.FileWriter.addRecurring(taskToAdd)
         else:
-            cls.FileWriter.addOneOff(taskToAdd)
+            if creatorArguments <= 1 or cls.outputWriter.askToAddOneOff(taskToAdd):
+                cls.FileWriter.addOneOff(taskToAdd)
+        return 0
         
     @classmethod
     def printSchedule(cls,printerArguments):
