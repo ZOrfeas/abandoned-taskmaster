@@ -109,12 +109,22 @@ class Taskmaster:
             else:
                 return True
         @classmethod
-        def isProperDateString(cls,dateStringToCheck):
-            try:
-                datetime.datetime(dateStringToCheck, "%d-%m-%Y")
-                return True
-            except ValueError:
-                return False
+        def checkAndPrepDateString(cls,dateStringToCheck):
+            properDateStrings = ['today','tomorrow','the day after']
+            if dateStringToCheck not in properDateStrings and not dateStringToCheck.isnumeric():
+                try:
+                    datetime.datetime.strptime(dateStringToCheck, "%d-%m-%Y")
+                    return dateStringToCheck
+                except ValueError:
+                    return None
+            else:
+                if dateStringToCheck == 'today': date = 0
+                elif dateStringToCheck == 'tomorrow': date = 1
+                elif dateStringToCheck == 'the day after': date = 2
+                today = datetime.date.today()
+                targetDate = today + datetime.timedelta(days=date)
+                date = datetime.datetime.strftime(targetDate, "%d-%m-%Y")
+                return date
         @classmethod
         def checkAndPrepDaysTimesString(cls,stringToCheck):
             properDays = ['mon','tue','wed','thu','fri','sat','sun']
@@ -148,8 +158,11 @@ class Taskmaster:
                 if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
                     return False,argsToCheck[0]+'not a unique task name'
             if argAmount >= 2:
-                if not cls.isProperDateString(argsToCheck[1]):
+                date = checkAndPrepDateString(argsToCheck[1])
+                if date is None:
                     return False,argsToCheck[1]
+                else:
+                    argsToCheck[1] = date
             if argAmount >= 3:
                 if not cls.isProperTimeString(argsToCheck[2]):
                     return False,argsToCheck[2]
@@ -165,28 +178,87 @@ class Taskmaster:
                 else:
                     argsToCheck[4] = int(argsToCheck[4])
             return True,None
-
-    
-        @classmethod
-        def promptForTaskName(cls):
-            nameNotFound = True
-            while(nameNotFound):
-                name = cls.eofSafeInput("Give the task a name:\n").strip()
-                if name: nameNotFound = False
-                else: print("Invalid name, try again or press Ctrl-D to exit")
-            return name
+        
         @classmethod
         def promptForIsRecurring(cls):
-            repeat = True
-            while(repeat):
+            while(True):
                 isRecurring = cls.eofSafeInput("Is it a recurring task?(Y/n):").strip()
                 if isRecurring not in ['y','n','yes','no']:
                     print("Invalid answer, try again or press Ctrl-D to exit")
                 else:
                     isRecurring = True if isRecurring in ['y','yes'] else False
-                    repeat = False
-            return isRecurring
-        
+                    return isRecurring    
+        @classmethod
+        def promptForTaskName(cls):
+            while(True):
+                name = cls.eofSafeInput("Give the task a name:\n").strip()
+                if name: return name
+                else: print("Invalid name, try again or press Ctrl-D to exit")
+        @classmethod
+        def promptForDaysTimes(cls):
+            while(True):
+                daysTimesString = cls.eofSafeInput("When shall this task repeat?(e.g.: 'Mon 10:10,mon 10:20 , TUE'):\n").strip()
+                daysTimesSplitted = cls.checkAndPrepDaysTimesString(daysTimesString)
+                if daysTimesSplitted is not None:
+                    return daysTimesSplitted
+                else:
+                    print("Invalid input, try again or press Ctrl-D to exit")
+        @classmethod
+        def promptForDate(cls):
+            while(True):
+                date = cls.eofSafeInput("Specify the date when the task takes place(dd-mm-yyyy format):\n")
+                if cls.isProperDateString(date):
+                    return date
+                else:
+                    print("Invalid input, try again or press Ctrl-D to exit")
+        @classmethod
+        def promptForTime(cls):
+            while(True):
+                time = cls.eofSafeInput("Specify at what time")
+        @classmethod
+        def promptForDescription(cls):
+            possibleDescription = cls.eofSafeInput("Explain the task in more detail(or just press Enter):\n").strip()
+            return possibleDescription if possibleDescription != '' else None
+        @classmethod
+        def promptWantsCronAction(cls):
+            yesOrNo = cls.eofSafeInput("Do you want to schedule a cron job to occur some time prior?[Y/n(default n)]:\n").strip().lower()
+            return (True if yesOrNo in ['yes','y'] else False)
+        @classmethod
+        def promptCronMins(cls):
+            while(True):
+                mins = cls.eofSafeInput("Specify how long (in minutes) would you like the cronjob to take place:\n").strip()
+                if mins.isnumeric():
+                    return int(mins)
+                else:
+                    print("Not a valid number, try again or press Ctrl-D to exit")
+        @classmethod
+        def promptCronCommand(cls):
+            while(True):
+                commandString = cls.eofSafeInput("Specify what the cronjob should be:\n").strip()
+                yesOrNo = cls.eofSafeInput("Is the command '{}' ok?[Y/n(default y)]:\n".format(commandString))
+                yesOrNo = True if yesOrNo in ['yes','y',''] else False
+                if yesOrNo:
+                    return commandString
+
+        @classmethod
+        def resolveDescCron(cls,remainingArgs):
+            argAmount = len(remainingArgs)
+            cronActionMins = None
+            cronAction = None
+            description = None
+            if argAmount == 0:
+                if cls.promptWantsCronAction():
+                    cronActionMins = cls.promptCronMins()
+                    cronAction = cls.promptCronCommand()
+                description = cls.promptForDescription()
+            if argAmount >= 1:
+                if not isinstance(remainingArgs[0],int):
+                    description = remainingArgs[0]
+                else:
+                    cronActionMins = remainingArgs[0]
+                    cronAction = cls.promptCronCommand() if argAmount < 2 else remainingArgs[1]
+                    description = cls.promptForDescription() if argAmount < 3 else remainingArgs[2]
+            return cronActionMins,cronAction,description
         @classmethod
         def createRecurring(cls,suppliedArgs):
             taskToRet = {
@@ -199,7 +271,10 @@ class Taskmaster:
             argAmount = len(suppliedArgs)
             taskToRet["name"] = cls.promptForTaskName() if argAmount < 1 else suppliedArgs[0]
             taskToRet["daysTimes"] = cls.promptForDaysTimes() if argAmount < 2 else suppliedArgs[1]
-            
+            taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = cls.resolveDescCron(suppliedArgs[2:])
+            return taskToRet
+
+
         @classmethod
         def createOneOff(cls,suppliedArgs):
             taskToRet = {
@@ -211,6 +286,13 @@ class Taskmaster:
                 "cronAction":None,
                 "description":None
             }
+            argAmount = len(suppliedArgs)
+            taskToRet["name"] = cls.promptForTaskName() if argAmount < 1 else suppliedArgs[0]
+            taskToRet["date"] = cls.promptForDate() if argAmount < 2 else suppliedArgs[1]
+            taskToRet["time"] = cls.promptForTime() if argAmount < 3 else suppliedArgs[2]
+            taskToRet["isDeadlined"] = cls.promptForIsDeadlined() if argAmount < 4 else suppliedArgs[3]
+            taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = cls.resolveDescCron(suppliedArgs[4:])
+            return taskToRet
 
     @classmethod
     def help(cls):
