@@ -16,18 +16,38 @@ class Taskmaster:
     class FileWriter:
         
         @staticmethod
-        def initConfFile():
-            with open(Taskmaster.confFile,'w') as optionsFile:
+        def initConfFile(confFile):
+            with open(confFile,'w') as optionsFile:
                 optionsFile.write('{}\n')
-    
+        
+        @staticmethod
+        def appendTask(task,file):
+            with open(file, 'a') as targetFile:
+                targetFile.write(json.dumps(task)+'\n')
+        @classmethod
+        def addOneOff(cls,taskToAdd):
+            cls.appendTask(taskToAdd,Taskmaster.oneOffTasksFile)
+        @classmethod
+        def addRecurring(cls,taskToAdd):
+            cls.appendTask(taskToAdd,Taskmaster.recurringTasksFile)
     class FileReader:
         
         @staticmethod
-        def fetchConfOptions():
-            with open(Taskmaster.confFile) as optionsFile:
+        def fetchConfOptions(confFile):
+            with open(confFile) as optionsFile:
                 fetchedOptions = json.loads(optionsFile.read().strip())
                 return fetchedOptions
-        
+        @classmethod
+        def nameNotInFile(cls,name,file):
+            grepString = '"name": "'+name+'"'
+            grepProcess = subprocess.run(['grep','-q',grepString,file])
+            return bool(grepProcess.returncode)
+        @classmethod
+        def taskNameIsUnique(cls,nameToCheck):
+            if cls.nameNotInFile(nameToCheck,Taskmaster.recurringTasksFile) and cls.nameNotInFile(nameToCheck,Taskmaster.oneOffTasksFile):
+                return True
+            else:
+                return False
     
     class outputWriter:
 
@@ -43,6 +63,7 @@ class Taskmaster:
             "underline": '\033[4m',
             "end": '\033[0m'
         }
+        point = '\u2022'
         @classmethod
         def helpMessage(cls):
             title =       '                                       TASKMASTER                                       '
@@ -77,7 +98,7 @@ class Taskmaster:
             print('Me: Orfeas Zografos')
             print('orfeas.zografos@gmail.com for if you find I f\'ed something up too much')
             print('or to tell me how cool this is(\'nt)')
-            
+        
         @classmethod
         def wrongInputMessage(cls,invalidInput,caller=None):
             print("taskmaster.py: invalid input -- '{}'".format(invalidInput))
@@ -85,10 +106,41 @@ class Taskmaster:
             if caller is not None:
                 extraString = " or 'taskmaster.py {} help'".format(caller)
             print("Try 'taskmaster.py --help'{} for more information".format(extraString))
+        
+        @classmethod
+        def creatorHelp(cls):
+            print('This is the \'taskmaster -c\' help message:')
+            print()
+            print('If no commandline arguments are specified you will be prompted for each')
+            print(cls.point+" First arg is an optional 's' to specify silent task addition, if ommited default is non-silent")
+            print(cls.point+" Use 'recur','r','recurring' or 'once','o','oneoff' to choose between a recurring or oneOff task respectively")
+            print(cls.point+" Give the task a unique name.")
+            print(cls.point+"Recurring:")
+            print('     '+cls.point+" Specify when the task repeats in quotes(e.g.:\"mon,Tue 10:10 , THU 20:20\"")
+            print(cls.point+"One-Off:")
+            print('     '+cls.point+" Give the task a date(dd-mm-yyyy format, today|tomorrow|'the day after' or numbers counting up from today)")
+            print('     '+cls.point+" Specify time or time of day(hh:mm format or morning|noon|afternoon|evening|night) can be left empty ('')")
+            print('     '+cls.point+" Use 'dl' or 'nodl' to specify if this is a deadline or not")
+            print(cls.point+" If this argument is not an integer, it is assumed to be a description")
+            print('  otherwise it signifies the minutes in advance of the task time(s) to execute a cronjob')
+            print(cls.point+" Enclose in quotes the command you'd like to run")
+            print('  then add a description, or pass an empty string (\'\')')
+            print()
+            print('Keep in mind these are order sensitive, if any are ommited but no order is violated you will be prompted')
+
+        @classmethod
+        def prettyPrintRecurr(cls,taskToPrint):
+            print(json.dumps(taskToPrint))
+        @classmethod
+        def prettyPrintOneOff(cls,taskToPrint):
+            print(json.dumps(taskToPrint))
     
     class inputReader:
         
         suppliedWrapUpFunc = None
+        @classmethod
+        def setWrapUpFunc(cls,func):
+            cls.suppliedWrapUpFunc = func
         @classmethod
         def eofSafeInput(cls,promptText):
             try:
@@ -99,7 +151,7 @@ class Taskmaster:
                 sys.exit(0)
         @classmethod
         def isProperTimeString(cls,timeStringToCheck):
-            properTimesOfDay = ['morning','noon','afternoon','evening','night']
+            properTimesOfDay = ['morning','noon','afternoon','evening','night','']
             if timeStringToCheck not in properTimesOfDay:
                 try:
                     datetime.datetime.strptime(timeStringToCheck, "%H:%M")
@@ -138,7 +190,7 @@ class Taskmaster:
             argAmount = len(argsToCheck)
             if argAmount >= 1:
                 if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
-                    return False,argsToCheck[0]+'not a unique task name'
+                    return False,argsToCheck[0]+' not a unique task name'
             if argAmount >= 2:
                 daysTimes = cls.checkAndPrepDaysTimesString(argsToCheck[1])
                 if daysTimes is None:
@@ -146,9 +198,9 @@ class Taskmaster:
                 else:
                     argsToCheck[1] = daysTimes
             if argAmount >= 3:
-                if not argsToCheck[2].isnumeric() and argAmount > 3:
-                    return False,argsToCheck[2]+'too many args'
-                else:
+                if (not argsToCheck[2].isnumeric()) and argAmount > 3:
+                    return False,argsToCheck[2]+' too many args'
+                elif argsToCheck[2].isnumeric():
                     argsToCheck[2] = int(argsToCheck[2])
             return True,None
         @classmethod
@@ -156,7 +208,7 @@ class Taskmaster:
             argAmount = len(argsToCheck)
             if argAmount >= 1:
                 if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
-                    return False,argsToCheck[0]+'not a unique task name'
+                    return False,argsToCheck[0]+' not a unique task name'
             if argAmount >= 2:
                 date = checkAndPrepDateString(argsToCheck[1])
                 if date is None:
@@ -166,15 +218,17 @@ class Taskmaster:
             if argAmount >= 3:
                 if not cls.isProperTimeString(argsToCheck[2]):
                     return False,argsToCheck[2]
+                elif argsToCheck[2] == '':
+                    argsToCheck[2] = None
             if argAmount >= 4:
                 lowerCasedArg = argsToCheck[3].lower()
-                if lowerCasedArg not in ['y','n','yes','no']:
+                if lowerCasedArg not in ['dl','nodl']:
                     return False,argsToCheck[3]
                 else:
-                    argsToCheck[3] = True if lowerCasedArg in ['y','yes'] else False
+                    argsToCheck[3] = True if lowerCasedArg == 'dl' else False
             if argAmount >= 5:
-                if not argsToCheck[4].isnumeric() and argAmount > 5:
-                    return False,argsToCheck[4]
+                if (not argsToCheck[4].isnumeric()) and argAmount > 5:
+                    return False,argsToCheck[4]+' too many args'
                 else:
                     argsToCheck[4] = int(argsToCheck[4])
             return True,None
@@ -182,7 +236,7 @@ class Taskmaster:
         @classmethod
         def promptForIsRecurring(cls):
             while(True):
-                isRecurring = cls.eofSafeInput("Is it a recurring task?(Y/n):").strip()
+                isRecurring = cls.eofSafeInput("Is it a recurring task?(Y/n):\n").strip()
                 if isRecurring not in ['y','n','yes','no']:
                     print("Invalid answer, try again or press Ctrl-D to exit")
                 else:
@@ -207,14 +261,19 @@ class Taskmaster:
         def promptForDate(cls):
             while(True):
                 date = cls.eofSafeInput("Specify the date when the task takes place(dd-mm-yyyy format):\n")
-                if cls.isProperDateString(date):
+                date = cls.checkAndPrepDateString(date)
+                if date is not None:
                     return date
                 else:
                     print("Invalid input, try again or press Ctrl-D to exit")
         @classmethod
         def promptForTime(cls):
             while(True):
-                time = cls.eofSafeInput("Specify at what time")
+                time = cls.eofSafeInput("Specify at what time(hh:mm 24-hour format) or just press enter:\n").strip()
+                if cls.isProperTimeString(time):
+                    return time if time != '' else None
+                else:
+                    print("Invalid time, try again or press Ctrl-D to Exit")
         @classmethod
         def promptForDescription(cls):
             possibleDescription = cls.eofSafeInput("Explain the task in more detail(or just press Enter):\n").strip()
@@ -239,7 +298,16 @@ class Taskmaster:
                 yesOrNo = True if yesOrNo in ['yes','y',''] else False
                 if yesOrNo:
                     return commandString
-
+        @classmethod
+        def promptForIsDeadlined(cls):
+            while(True):
+                yesOrNo = cls.eofSafeInput("Is this the task's deadline?[Y/n(default n)]:\n").strip().lower()
+                return (True if yesOrNo in ['yes','y'] else False)
+        @classmethod
+        def promptToAddTask(cls):
+            while(True):
+                yesOrNo = cls.eofSafeInput("Is this task ok?[Y/n(default y)]:\n").strip().lower()
+                return (True if yesOrNo in ['yes','y',''] else False)
         @classmethod
         def resolveDescCron(cls,remainingArgs):
             argAmount = len(remainingArgs)
@@ -259,6 +327,7 @@ class Taskmaster:
                     cronAction = cls.promptCronCommand() if argAmount < 2 else remainingArgs[1]
                     description = cls.promptForDescription() if argAmount < 3 else remainingArgs[2]
             return cronActionMins,cronAction,description
+        
         @classmethod
         def createRecurring(cls,suppliedArgs):
             taskToRet = {
@@ -273,8 +342,6 @@ class Taskmaster:
             taskToRet["daysTimes"] = cls.promptForDaysTimes() if argAmount < 2 else suppliedArgs[1]
             taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = cls.resolveDescCron(suppliedArgs[2:])
             return taskToRet
-
-
         @classmethod
         def createOneOff(cls,suppliedArgs):
             taskToRet = {
@@ -294,6 +361,15 @@ class Taskmaster:
             taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = cls.resolveDescCron(suppliedArgs[4:])
             return taskToRet
 
+        @classmethod
+        def askToAddOneOff(cls,task):
+            Taskmaster.outputWriter.prettyPrintOneOff(task)
+            return cls.promptToAddTask()
+        @classmethod
+        def askToAddRecurr(cls,task):
+            Taskmaster.outputWriter.prettyPrintRecurr(task)
+            return cls.promptToAddTask()
+
     @classmethod
     def help(cls):
         cls.outputWriter.helpMessage()
@@ -303,8 +379,15 @@ class Taskmaster:
     def createTask(cls,creatorArguments):
         isRecurringProperArgs = ['recur','r','recurring']
         isOneOffProperArgs = ['once','o','oneoff']
-        isDeadlinedProperArgs =['dl','deadlined','nodl']
         argAmount = len(creatorArguments)
+        silentMode = False
+        if argAmount >= 1 and creatorArguments[0] == 'help':
+            cls.outputWriter.creatorHelp()
+            return 0
+        if argAmount >= 1 and creatorArguments[0] == 's':
+            silentMode = True
+            creatorArguments = creatorArguments[1:]
+            argAmount = argAmount - 1
         if argAmount == 0:
             isRecurring = cls.inputReader.promptForIsRecurring()
         else:
@@ -324,10 +407,10 @@ class Taskmaster:
         else:
             taskToAdd = cls.inputReader.createRecurring(taskDetails) if isRecurring else cls.inputReader.createOneOff(taskDetails)
         if isRecurring:
-            if creatorArguments <= 1 or cls.outputWriter.askToAddRecurr(taskToAdd):
+            if argAmount <= 1 or (silentMode or cls.inputReader.askToAddRecurr(taskToAdd)):
                 cls.FileWriter.addRecurring(taskToAdd)
         else:
-            if creatorArguments <= 1 or cls.outputWriter.askToAddOneOff(taskToAdd):
+            if argAmount <= 1 or (silentMode or cls.inputReader.askToAddOneOff(taskToAdd)):
                 cls.FileWriter.addOneOff(taskToAdd)
         return 0
         
@@ -340,7 +423,7 @@ class Taskmaster:
     @classmethod
     def configure(cls,confArgumets):
         if os.stat(cls.confFile).st_size == 0:
-            cls.FileWriter.initConfFile()
+            cls.FileWriter.initConfFile(cls.confFile)
     
     @classmethod
     def wrapUp(cls):
@@ -365,11 +448,8 @@ class Taskmaster:
             return 1
     
     @classmethod
-    def setConfOptions(cls):
-        cls.options = cls.FileReader.fetchConfOptions()
-    @classmethod
-    def setWrapUpFunc(cls):
-        cls.inputReader.suppliedWrapUpFunc = cls.wrapUp
+    def setConfOptions(cls,confFile):
+        cls.options = cls.FileReader.fetchConfOptions(confFile)
     @classmethod
     def createOrVerifyDir(cls):
         if not os.path.exists(cls.tasksFolderLocation):
@@ -385,8 +465,8 @@ class Taskmaster:
     @classmethod
     def do(cls,argumentsList):
         cls.createOrVerifyDir()
-        cls.setConfOptions()
-        cls.setWrapUpFunc()
+        cls.setConfOptions(cls.confFile)
+        cls.inputReader.setWrapUpFunc(cls.wrapUp)
         return cls.parseArgsAndDecide(argumentsList)
 
 
