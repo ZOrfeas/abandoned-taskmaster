@@ -128,9 +128,18 @@ class Taskmaster:
             print()
             print('Keep in mind these are order sensitive, if any are ommited but no order is violated you will be prompted')
 
+        @staticmethod
+        def printDaysTimes(daysTimes):
+            last = len(daysTimes) - 1
+            for i,pair in enumerate(daysTimes):
+                print(*pair, end='')
+                if i < last: print(', ', end='')
+            print()
         @classmethod
         def prettyPrintRecurr(cls,taskToPrint):
-            print(json.dumps(taskToPrint))
+            print(cls.color["underline"]+taskToPrint["name"]+cls.color["end"])
+            cls.printDaysTimes(taskToPrint["daysTimes"])
+
         @classmethod
         def prettyPrintOneOff(cls,taskToPrint):
             print(json.dumps(taskToPrint))
@@ -210,7 +219,7 @@ class Taskmaster:
                 if not Taskmaster.FileReader.taskNameIsUnique(argsToCheck[0]):
                     return False,argsToCheck[0]+' not a unique task name'
             if argAmount >= 2:
-                date = checkAndPrepDateString(argsToCheck[1])
+                date = cls.checkAndPrepDateString(argsToCheck[1])
                 if date is None:
                     return False,argsToCheck[1]
                 else:
