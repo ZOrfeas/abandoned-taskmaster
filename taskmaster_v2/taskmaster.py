@@ -1,10 +1,16 @@
+#!/usr/bin/python3
 import sys,os
 from pathlib import Path
-from taskmaster_v2.FileReader import FileReader 
-from taskmaster_v2.FIleWriter import FIleWriter
-from taskmaster_v2.InputReader import InputReader
-from taskmaster_v2.OutputWriter import OutputWriter
-from taskmaster_v2.Task import Task
+# from .FileReader import FileReader 
+# from .FIleWriter import FIleWriter
+# from .InputReader import InputReader
+# from .OutputWriter import OutputWriter
+# from .Task import Task
+import FileReader
+import FIleWriter
+import OutputWriter
+import InputReader
+import Task
 
 
 tasksFolderLocation = os.path.join(str(Path.home()),".tasksFolder")
@@ -13,6 +19,19 @@ oneOffTasksFile = os.path.join(tasksFolderLocation,"oneOffTasks")
 confFile = os.path.join(tasksFolderLocation,"conf")
 
 options = {}
+
+def printHelp():
+    OutputWriter.helpMessage()
+    return 0
+def createTask():
+    print()
+def printSchedule():
+    print("Entered printSchedule")
+def deleteTask():
+    print("Entered deleteTask")
+def configure():
+    if os.stat(confFile).st_size == 0:
+        FIleWriter.initConfFile(confFile)
 
 def parseArgsAndDecide(allCmdArgs):
     if len(allCmdArgs)==0 or allCmdArgs[0] in ['-h', '--help']:
@@ -26,8 +45,9 @@ def parseArgsAndDecide(allCmdArgs):
     elif allCmdArgs[0] in ['-o','--conf','--options']:
         return configure(allCmdArgs[1:])
     else:
-        outputWriter.wrongInputMessage(allCmdArgs[0])
+        OutputWriter.wrongInputMessage(allCmdArgs[0])
         return 1
+
 def getConfOptions(confFile):
     options = FileReader.fetchConfOptions(confFile)
     
@@ -36,6 +56,7 @@ def findOrMakeAFile(path):
         open(path,'w').close()
         return 1
     return 0
+
 def checkAndSetUpDir():
     if not os.path.exists(tasksFolderLocation):
         os.makedirs(tasksFolderLocation)
@@ -44,13 +65,15 @@ def checkAndSetUpDir():
     if findOrMakeAFile(confFile):
         configure()
 
+def wrapUp():
+    '''Wrap up func for when exiting a prompt prematurely'''
+    print("Wrapping up...")
+
 def do(allCmdArgs):
     checkAndSetUpDir()
     getConfOptions(confFile)
     InputReader.setWrapUpFunc(wrapUp)
     return parseArgsAndDecide(allCmdArgs)
-
-        
 
 def main(argvector):
     allCmdArgs = argvector[1:]
