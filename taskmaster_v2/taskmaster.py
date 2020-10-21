@@ -1,16 +1,10 @@
 #!/usr/bin/python3
 import sys,os
 from pathlib import Path
-# from .FileReader import FileReader 
-# from .FIleWriter import FIleWriter
-# from .InputReader import InputReader
-# from .OutputWriter import OutputWriter
-# from .Task import Task
 import FileReader
 import FIleWriter
 import OutputWriter
 import InputReader
-import Task
 
 
 tasksFolderLocation = os.path.join(str(Path.home()),".tasksFolder")
@@ -23,15 +17,50 @@ options = {}
 def printHelp():
     OutputWriter.helpMessage()
     return 0
-def createTask():
-    print()
+def createTask(creatorArgs):
+    recurrProperArgs = ['recur','r','recurring']
+    oneOffProperArgs = ['once','o','oneoff']
+    argAmount = len(creatorArgs)
+    silentMode = False
+    if argAmount >= 1 and creatorArgs[0] == 'help':
+        OutputWriter.creatorHelp()
+        return 0
+    if argAmount >= 1 and creatorArgs[0] == 's':
+        silentMode = True
+        creatorArgs = creatorArgs[1:]
+        argAmount = argAmount - 1
+    if argAmount == 0:
+        isRecurring = InputReader.promptForIsRecurring()
+    else:
+        isRecurringCandidate = creatorArgs[0]
+        if isRecurringCandidate in recurrProperArgs:
+            isRecurring = True
+        elif isRecurringCandidate in oneOffProperArgs:
+            isRecurring = False
+        else:
+            OutputWriter.wrongInputMessage(creatorArgs[0], '-c')
+            return 1
+    taskDets = creatorArgs[1:]
+    argsOk,wrongArg = InputReader.verifyAndPrepRecurrArgs(taskDets) if isRecurring else InputReader.verifyAndPrepOneOffArgs(taskDets)
+    if not argsOk:
+        OutputWriter.wrongInputMessage(wrongArg, '-c')
+        return 1
+    else:
+        taskToAdd = InputReader.createRecurring(taskDets) if isRecurring else InputReader.createOneOff(taskDets)
+    if isRecurring:
+        if argAmount <= 1 or (silentMode or InputReader.askToAddRecurr(taskToAdd)):
+            FIleWriter.addRecurring(taskToAdd)
+    else:
+        if argAmount <= 1 or (silentMode or InputReader.askToAddOneOff(taskToAdd)):
+            FIleWriter.addOneOff(taskToAdd)
+    return 0
 def printSchedule():
     print("Entered printSchedule")
 def deleteTask():
     print("Entered deleteTask")
 def configure():
     if os.stat(confFile).st_size == 0:
-        FIleWriter.initConfFile(confFile)
+        FIleWriter.initConfFile()
 
 def parseArgsAndDecide(allCmdArgs):
     if len(allCmdArgs)==0 or allCmdArgs[0] in ['-h', '--help']:
@@ -48,8 +77,6 @@ def parseArgsAndDecide(allCmdArgs):
         OutputWriter.wrongInputMessage(allCmdArgs[0])
         return 1
 
-def getConfOptions(confFile):
-    options = FileReader.fetchConfOptions(confFile)
     
 def findOrMakeAFile(path):
     if not os.path.exists(path):
@@ -71,8 +98,10 @@ def wrapUp():
 
 def do(allCmdArgs):
     checkAndSetUpDir()
-    getConfOptions(confFile)
     InputReader.setWrapUpFunc(wrapUp)
+    FileReader.setFileLocations(recurringTasksFile,oneOffTasksFile,confFile)
+    FIleWriter.setFileLocations(recurringTasksFile,oneOffTasksFile,confFile)
+    options = FileReader.fetchConfOptions()
     return parseArgsAndDecide(allCmdArgs)
 
 def main(argvector):

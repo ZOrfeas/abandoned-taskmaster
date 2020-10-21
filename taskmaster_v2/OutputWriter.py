@@ -50,3 +50,27 @@ def helpMessage():
     print('Me: Orfeas Zografos')
     print('orfeas.zografos@gmail.com for if you find I f\'ed something up too much')
     print('or to tell me how cool this is(\'nt)')
+
+def printDaysTimes(daysTimes):
+    last = len(daysTimes) - 1
+    for i,pair in enumerate(daysTimes):
+        print(*pair, end='')
+        if i < last: print(', ', end='')
+    print()
+
+def printCronDesc(task):
+    print()
+
+def prettyPrintRecurr(cls,taskToPrint):
+    print(color.bold+taskToPrint["name"]+color.end)
+    print(color.underline+"On: "+color.end)
+    cls.printDaysTimes(taskToPrint["daysTimes"])
+    cls.printCronDesc(taskToPrint)
+
+def prettyPrintOneOff(cls,taskToPrint):
+    print(color.bold+taskToPrint["name"]+color.end)
+    print(color.underline+"At: "+color.end, end='')
+    print(taskToPrint["date"], end='')
+    print('',end='') if taskToPrint["time"] is None else print(' '+taskToPrint["time"], end='')
+    print("(deadline!)") if taskToPrint["isDeadlined"] == 'dl' else print()
+    cls.printCronDesc(taskToPrint)
