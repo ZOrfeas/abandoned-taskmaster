@@ -30,6 +30,7 @@ class Taskmaster:
         @classmethod
         def addRecurring(cls,taskToAdd):
             cls.appendTask(taskToAdd,Taskmaster.recurringTasksFile)
+    
     class FileReader:
         
         @staticmethod
@@ -135,14 +136,24 @@ class Taskmaster:
                 print(*pair, end='')
                 if i < last: print(', ', end='')
             print()
-        @classmethod
-        def prettyPrintRecurr(cls,taskToPrint):
-            print(cls.color["underline"]+taskToPrint["name"]+cls.color["end"])
-            cls.printDaysTimes(taskToPrint["daysTimes"])
+        @staticmethod
+        def printCronDesc(task):
+            print()
 
         @classmethod
+        def prettyPrintRecurr(cls,taskToPrint):
+            print(cls.color["bold"]+taskToPrint["name"]+cls.color["end"])
+            print(cls.color["underline"]+"On: "+cls.color["end"])
+            cls.printDaysTimes(taskToPrint["daysTimes"])
+            cls.printCronDesc(taskToPrint)
+        @classmethod
         def prettyPrintOneOff(cls,taskToPrint):
-            print(json.dumps(taskToPrint))
+            print(cls.color["bold"]+taskToPrint["name"]+cls.color["end"])
+            print(cls.color["underline"]+"At: "+cls.color["end"], end='')
+            print(taskToPrint["date"], end='')
+            print('',end='') if taskToPrint["time"] is None else print(' '+taskToPrint["time"], end='')
+            print("(deadline!)") if taskToPrint["isDeadlined"] == 'dl' else print()
+            cls.printCronDesc(taskToPrint)
     
     class inputReader:
         
@@ -481,7 +492,6 @@ class Taskmaster:
 
 def main(argvector):
     argumentsList = argvector[1:]
-    argumentCount = len(argumentsList)
     exitCode = Taskmaster.do(argumentsList)
     sys.exit(exitCode)
 
