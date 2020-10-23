@@ -4,6 +4,7 @@ from OutputWriter import prettyPrintOneOff,prettyPrintRecurr
 suppliedWrapUpFunc = None
 
 def setWrapUpFunc(func):
+    global suppliedWrapUpFunc 
     suppliedWrapUpFunc = func
 
 def eofSafeInput(promptText):
@@ -18,7 +19,7 @@ def checkAndPrepTimeString(timeStringToCheck):
     properTimesOfDay = {'morning':'09:00','noon':'14:00','afternoon':'18:00','evening':'21:00','night':'00:00','':None}
     if timeStringToCheck not in properTimesOfDay:
         try:
-            datetime.datetime(timeStringToCheck, "%H:%M")
+            datetime.datetime.strptime(timeStringToCheck, "%H:%M")
             return timeStringToCheck
         except ValueError:
             return None
@@ -59,7 +60,7 @@ def verifyAndPrepRecurrArgs(argsToCheck):
     argAmount = len(argsToCheck)
     if argAmount >= 1:
         if not taskNameIsUnique(argsToCheck[0]):
-            return False,argsToCheck[0]+'not a unique name'
+            return False,argsToCheck[0]+' not a unique name'
     if argAmount >= 2:
         daysTimes = checkAndPrepDaysTimesString(argsToCheck[1])
         if daysTimes is None:
@@ -158,7 +159,7 @@ def promptCronMins():
         else:
             print("Not a valid number, try again or press Ctrl-D to exit")
 
-def promptCronCommand(cls):
+def promptCronCommand():
     while(True):
         commandString = eofSafeInput("Specify what the cronjob should be:\n").strip()
         yesOrNo = eofSafeInput("Is the command '{}' ok?[Y/n(default y)]:\n".format(commandString))
@@ -166,7 +167,7 @@ def promptCronCommand(cls):
         if yesOrNo:
             return commandString
         
-def promptForIsDeadlined(cls):
+def promptForIsDeadlined():
     while(True):
         yesOrNo = eofSafeInput("Is this the task's deadline?[Y/n(default n)]:\n").strip().lower()
         return (True if yesOrNo in ['yes','y'] else False)

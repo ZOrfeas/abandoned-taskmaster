@@ -1,3 +1,5 @@
+import textwrap as tw
+
 class color:
    purple = '\033[95m'
    cyan = '\033[96m'

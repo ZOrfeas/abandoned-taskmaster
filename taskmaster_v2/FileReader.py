@@ -1,5 +1,4 @@
 import json,subprocess
-from os import name
 
 recurringTasksFile = None
 oneOffTasksFile = None
