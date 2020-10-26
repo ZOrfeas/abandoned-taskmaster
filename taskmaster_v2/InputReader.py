@@ -143,7 +143,15 @@ def promptForTime():
             return time if time != '' else None
         else:
             print("Invalid time, try again or press Ctrl-D to Exit")
-
+def promptForNonEmptyTime():
+    while(True):
+        time = eofSafeInput("Specify at what time(hh:mm 24-hour format):\n").strip()
+        time = checkAndPrepTimeString(time)
+        if time is not None and time != '':
+            return time
+        else:
+            print("Invalid time, try again or press Ctrl-D to Exit")
+        
 def promptForDescription():
     possibleDescription = eofSafeInput("Explain the task in more detail(or just press Enter):\n").strip()
     return possibleDescription if possibleDescription != '' else None

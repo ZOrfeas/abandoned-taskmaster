@@ -1,5 +1,5 @@
 import json,os,datetime
-from Tasks import Task
+# from Tasks import Task
 from InputReader import promptWantsCronAction,promptCronMins,promptCronCommand
 
 recurringTasksFile = None
@@ -29,6 +29,22 @@ def craftOneOffCronJob(task):
     cronJob = "{} {} {} {} * {}".format(mins,hour,day,month,cronAction)
     return cronJob
 
+def craftRecurCronJob(task):
+    days = {"sun":0,"mon":1,"tue":2,"wed":3,"thu":4,"fri":5,"sat":6}
+    cronJobs = []
+    cronAction = task.cronAction
+    cronMins = task.cronMins
+    for i in task.daysTimes:
+        dayObject = datetime.datetime.strptime(i[0].capitalize(), "%a")
+        [hour,mins] = i[1].split(':')
+        realTaskTime = dayObject + datetime.timedelta(hours=int(hour),minutes=int(mins))
+        realCronTime = realTaskTime - datetime.timedelta(minutes=int(cronMins))
+        [mins,hour,day] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%a")
+        day = days[day.lower()]
+        cronJob = "{} {} * * {} {}".format(mins,hour,day,cronAction)
+        cronJobs.append(cronJob)
+    return cronJobs
+
 def makeCronSelfDelete(cronCommand):
     selfDeletingCron = cronCommand + "; crontab -l | grep -v '"+cronCommand+"' | crontab -"
     return selfDeletingCron
@@ -44,24 +60,28 @@ def addOneOffCronJob(task):
     # addCronJob(cronJob)
 
 def addRecurCronJob(task):
-    cronJob = craftRecurCronJob(task)
-    print(cronJob)
-    # addCronJob(cronJob)
+    cronJobs = craftRecurCronJob(task)
+    print(cronJobs)
+    # for i in cronJobs: addCronJob(cronJobs)
 
 def appendTaskToFile(task,file):
     with open(file, 'a') as targetFile:
-        targetFile.write(json.dumps(task)+'\n')
+        targetFile.write(json.dumps(task.makeDict())+'\n')
 
 def addOneOff(taskToAdd):
-    if cronWellDefined(taskToAdd):
-        if wantsCron(taskToAdd):
-            addOneOffCronJob(taskToAdd)
-    else:
-        print("\nCronjob related info not well defined, skipping its addition.")
+    if taskToAdd.wantsCron():
+        if not taskToAdd.cronWellDefined():
+            print("CronJob requested but some info missing. Reminder: CronJob will take place {} mins before the times specifed".format(taskToAdd.cronMins))
+            taskToAdd.resolveCronInconsistencies()
+        addOneOffCronJob(taskToAdd)
     scheduleOneOffDeletion(taskToAdd)
     appendTaskToFile(taskToAdd,oneOffTasksFile)
 
 def addRecurring(taskToAdd):
-    if cronWellDefined(taskToAdd):
+    if taskToAdd.wantsCron():
+        if not taskToAdd.cronWellDefined():
+            print("CronJob requested but some info missing. Reminder: CronJob will take place {} mins before the times specifed".format(taskToAdd.cronMins))
+            taskToAdd.resolveCronInconsistencies()
         addRecurCronJob(taskToAdd)
+        taskToAdd.addRecurCronJob()
     appendTaskToFile(taskToAdd,recurringTasksFile)
