@@ -1,4 +1,5 @@
 import json,os,datetime
+from InputReader import promptWantsCronAction,promptCronMins,promptCronCommand
 
 recurringTasksFile = None
 oneOffTasksFile = None
@@ -38,19 +39,28 @@ def addCronJob(cronCommand):
 def addOneOffCronJob(task):
     cronJob = craftOneOffCronJob(task)
     cronJob = makeCronSelfDelete(cronJob)
-    addCronJob(cronJob)
+    print(cronJob)
+    # addCronJob(cronJob)
+
+def addRecurCronJob(task):
+    cronJob = craftRecurCronJob(task)
+    print(cronJob)
+    # addCronJob(cronJob)
 
 def appendTaskToFile(task,file):
     with open(file, 'a') as targetFile:
         targetFile.write(json.dumps(task)+'\n')
 
 def addOneOff(taskToAdd):
-    if canAddCron(taskToAdd):
-        addOneOffCronJob(taskToAdd)
+    if cronWellDefined(taskToAdd):
+        if wantsCron(taskToAdd):
+            addOneOffCronJob(taskToAdd)
+    else:
+        print("\nCronjob related info not well defined, skipping its addition.")
     scheduleOneOffDeletion(taskToAdd)
     appendTaskToFile(taskToAdd,oneOffTasksFile)
 
 def addRecurring(taskToAdd):
-    if canAddCron(taskToAdd):
+    if cronWellDefined(taskToAdd):
         addRecurCronJob(taskToAdd)
     appendTaskToFile(taskToAdd,recurringTasksFile)
