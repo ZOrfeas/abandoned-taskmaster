@@ -1,4 +1,5 @@
 import datetime,sys
+from Tasks import Task
 from FileReader import taskNameIsUnique
 from OutputWriter import prettyPrintOneOff,prettyPrintRecurr
 suppliedWrapUpFunc = None
@@ -208,7 +209,7 @@ def createRecurring(suppliedArgs):
     taskToRet["name"] = promptForTaskName() if argAmount < 1 else suppliedArgs[0]
     taskToRet["daysTimes"] = promptForDaysTimes() if argAmount < 2 else suppliedArgs[1]
     taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = resolveDescCron(suppliedArgs[2:])
-    return taskToRet
+    return Task(True,taskToRet)
 
 def createOneOff(suppliedArgs):
     taskToRet = {
@@ -226,7 +227,7 @@ def createOneOff(suppliedArgs):
     taskToRet["time"] = promptForTime() if argAmount < 3 else suppliedArgs[2]
     taskToRet["isDeadlined"] = promptForIsDeadlined() if argAmount < 4 else suppliedArgs[3]
     taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = resolveDescCron(suppliedArgs[4:])
-    return taskToRet
+    return Task(False,taskToRet)
 
 def askToAddOneOff(task):
     prettyPrintOneOff(task)

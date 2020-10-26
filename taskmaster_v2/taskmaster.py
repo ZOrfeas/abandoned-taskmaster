@@ -5,6 +5,7 @@ import FileReader
 import FIleWriter
 import OutputWriter
 import InputReader
+from Tasks import Task
 
 
 tasksFolderLocation = os.path.join(str(Path.home()),".tasksFolder")

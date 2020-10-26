@@ -1,4 +1,5 @@
 import json,os,datetime
+from Tasks import Task
 from InputReader import promptWantsCronAction,promptCronMins,promptCronCommand
 
 recurringTasksFile = None
@@ -18,10 +19,10 @@ def initConfFile():
         optionsFile.write('{}\n')
 
 def craftOneOffCronJob(task):
-    [hour,mins] = task["time"].split(':')
-    cronAction = task["cronAction"]
-    cronMins = task["cronActionMins"]
-    taskDate = datetime.datetime.strptime(task["date"], "%d-%m-%Y")
+    [hour,mins] = task.time.split(':')
+    cronAction = task.cronAction
+    cronMins = task.cronMins
+    taskDate = datetime.datetime.strptime(task.date, "%d-%m-%Y")
     realTaskTime = taskDate + datetime.timedelta(hours=int(hour),minutes=int(mins))
     realCronTime = realTaskTime - datetime.timedelta(minutes=int(cronMins))
     [mins,hour,day,month] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%-d|%-m").split('|')

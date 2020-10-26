@@ -61,9 +61,9 @@ def printDaysTimes(daysTimes):
     print()
 
 def printCronDesc(task):
-    cronActionMins = task["cronActionMins"]
-    cronAction = task["cronAction"]
-    desc = task["description"]
+    cronActionMins = task.cronMins
+    cronAction = task.cronAction
+    desc = task.description
     if cronActionMins is not None:
         print(color.red+"CronJob:"+color.end, end=' ')
         print("{} mins before the task's time '{}' will be executed.".format(cronActionMins,cronAction))
@@ -72,16 +72,16 @@ def printCronDesc(task):
 
 def prettyPrintRecurr(taskToPrint):
     print()
-    print(color.red+taskToPrint["name"]+color.end)
+    print(color.red+taskToPrint.name+color.end)
     print(color.underline+"On: "+color.end, end='')
-    printDaysTimes(taskToPrint["daysTimes"])
+    printDaysTimes(taskToPrint.daysTimes)
     printCronDesc(taskToPrint)
 
 def prettyPrintOneOff(taskToPrint):
     print()
-    print(color.bold+taskToPrint["name"]+color.end)
+    print(color.bold+taskToPrint.name+color.end)
     print(color.underline+"At: "+color.end, end='')
-    print(taskToPrint["date"], end='')
-    print('',end='') if taskToPrint["time"] is None else print(' '+taskToPrint["time"], end='')
-    print("(deadline!)") if taskToPrint["isDeadlined"] == 'dl' else print()
+    print(taskToPrint.date, end='')
+    print('',end='') if taskToPrint.time is None else print(' '+taskToPrint.time, end='')
+    print("(deadline!)") if taskToPrint.isDeadlined == 'dl' else print()
     printCronDesc(taskToPrint)
