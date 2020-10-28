@@ -1,5 +1,4 @@
 import datetime,sys
-from Tasks import Task
 from FileReader import taskNameIsUnique
 from OutputWriter import prettyPrintOneOff,prettyPrintRecurr
 suppliedWrapUpFunc = None
@@ -105,12 +104,13 @@ def verifyAndPrepOneOffArgs(argsToCheck):
     return True,None
 
 def promptForIsRecurring():
-    isRecurring = eofSafeInput("Is it a recurring task?(Y/n):\n").strip()
-    if isRecurring not in ['y','n','yes','no']:
-        print("Invalid answer, try again or press Ctrl-D to exit")
-    else:
-        isRecurring = True if isRecurring in ['y','yes'] else False
-        return isRecurring     
+    while(True):
+        isRecurring = eofSafeInput("Is it a recurring task?(Y/n):\n").strip()
+        if isRecurring not in ['y','n','yes','no']:
+            print("Invalid answer, try again or press Ctrl-D to exit")
+        else:
+            isRecurring = True if isRecurring in ['y','yes'] else False
+            return isRecurring     
 
 def promptForTaskName():
         name = eofSafeInput("Give the task a name:\n").strip()
@@ -157,8 +157,12 @@ def promptForDescription():
     return possibleDescription if possibleDescription != '' else None
 
 def promptWantsCronAction():
-    yesOrNo = eofSafeInput("Do you want to schedule a cron job to occur some time prior?[Y/n(default n)]:\n").strip().lower()
-    return (True if yesOrNo in ['yes','y'] else False)
+    while(True):
+        yesOrNo = eofSafeInput("Do you want to schedule a cron job to occur some time prior?[Y/n(default n)]:\n").strip().lower()
+        if yesOrNo not in ['yes','y','no','n','']:
+            print("Invalid input, try again or press Ctrl-D to Exit")
+        else:
+            return (True if yesOrNo in ['yes','y'] else False)
 
 def promptCronMins():
     while(True):
@@ -179,12 +183,18 @@ def promptCronCommand():
 def promptForIsDeadlined():
     while(True):
         yesOrNo = eofSafeInput("Is this the task's deadline?[Y/n(default n)]:\n").strip().lower()
-        return (True if yesOrNo in ['yes','y'] else False)
+        if yesOrNo not in ['yes','y','no','n']:
+            print("Invalid input, try again or press Ctrl-D to exit")
+        else:
+            return (True if yesOrNo in ['yes','y'] else False)
     
 def promptToAddTask():
     while(True):
         yesOrNo = eofSafeInput("Is this task ok?[Y/n(default y)]:\n").strip().lower()
-        return (True if yesOrNo in ['yes','y',''] else False)
+        if yesOrNo not in ['yes','y','no','n']:
+            print("Invalid input, try again or press Ctrl-D to exit")
+        else:
+            return (True if yesOrNo in ['yes','y',''] else False)
 
 def resolveDescCron(remainingArgs):
     argAmount = len(remainingArgs)
@@ -217,7 +227,7 @@ def createRecurring(suppliedArgs):
     taskToRet["name"] = promptForTaskName() if argAmount < 1 else suppliedArgs[0]
     taskToRet["daysTimes"] = promptForDaysTimes() if argAmount < 2 else suppliedArgs[1]
     taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = resolveDescCron(suppliedArgs[2:])
-    return Task(True,taskToRet)
+    return taskToRet
 
 def createOneOff(suppliedArgs):
     taskToRet = {
@@ -235,7 +245,7 @@ def createOneOff(suppliedArgs):
     taskToRet["time"] = promptForTime() if argAmount < 3 else suppliedArgs[2]
     taskToRet["isDeadlined"] = promptForIsDeadlined() if argAmount < 4 else suppliedArgs[3]
     taskToRet["cronActionMins"],taskToRet["cronAction"],taskToRet["description"] = resolveDescCron(suppliedArgs[4:])
-    return Task(False,taskToRet)
+    return taskToRet
 
 def askToAddOneOff(task):
     prettyPrintOneOff(task)

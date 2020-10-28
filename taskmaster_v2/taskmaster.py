@@ -47,7 +47,7 @@ def createTask(creatorArgs):
         OutputWriter.wrongInputMessage(wrongArg, '-c')
         return 1
     else:
-        taskToAdd = InputReader.createRecurring(taskDets) if isRecurring else InputReader.createOneOff(taskDets)
+        taskToAdd = Task(True,InputReader.createRecurring(taskDets)) if isRecurring else Task(False,InputReader.createOneOff(taskDets))
     if isRecurring:
         if argAmount <= 1 or (silentMode or InputReader.askToAddRecurr(taskToAdd)):
             FIleWriter.addRecurring(taskToAdd)

@@ -28,6 +28,12 @@ class Task:
         toRetDict["description"] = self.description
         return toRetDict
 
+    def wantsCron(self):
+        if self.cronMins is not None:
+            return True
+        else:
+            return False
+
     def cronWellDefined(self):
         if self.isRecurring:
             for i in self.daysTimes:

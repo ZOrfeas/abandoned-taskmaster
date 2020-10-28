@@ -1,6 +1,5 @@
 import json,os,datetime
 # from Tasks import Task
-from InputReader import promptWantsCronAction,promptCronMins,promptCronCommand
 
 recurringTasksFile = None
 oneOffTasksFile = None
@@ -29,17 +28,29 @@ def craftOneOffCronJob(task):
     cronJob = "{} {} {} {} * {}".format(mins,hour,day,month,cronAction)
     return cronJob
 
+def craftOneOffDeleter(task):
+    taskDate = datetime.datetime.strptime(task.date, "%d-%m-%Y")
+    taskDelTime = taskDate + datetime.timedelta(days=1)
+    [day,month] = datetime.datetime.strftime(taskDelTime, "%-d|%-m").split('|')
+    cronDeleter = "taskmaster.py --delete s \"{}\"".format(task.name)
+    cronJob = "* * {} {} * {}".format(day,month,cronDeleter)
+    return cronJob
+
 def craftRecurCronJob(task):
     days = {"sun":0,"mon":1,"tue":2,"wed":3,"thu":4,"fri":5,"sat":6}
+    daysFixer = {"mon":7,"tue":1,"wed":2,"thu":3,"fri":4,"sat":5,"sun":6}
     cronJobs = []
     cronAction = task.cronAction
     cronMins = task.cronMins
     for i in task.daysTimes:
-        dayObject = datetime.datetime.strptime(i[0].capitalize(), "%a")
+        print(i)
+        dayObject = datetime.datetime.strptime("Mon", "%a")
+        dayObject = dayObject + datetime.timedelta(days=daysFixer[i[0]])
         [hour,mins] = i[1].split(':')
         realTaskTime = dayObject + datetime.timedelta(hours=int(hour),minutes=int(mins))
         realCronTime = realTaskTime - datetime.timedelta(minutes=int(cronMins))
-        [mins,hour,day] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%a")
+        [mins,hour,day] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%a").split('|')
+        print(mins,hour,day)
         day = days[day.lower()]
         cronJob = "{} {} * * {} {}".format(mins,hour,day,cronAction)
         cronJobs.append(cronJob)
@@ -55,6 +66,12 @@ def addCronJob(cronCommand):
 
 def addOneOffCronJob(task):
     cronJob = craftOneOffCronJob(task)
+    cronJob = makeCronSelfDelete(cronJob)
+    print(cronJob)
+    # addCronJob(cronJob)
+
+def scheduleOneOffDeletion(task):
+    cronJob = craftOneOffDeleter(task)
     cronJob = makeCronSelfDelete(cronJob)
     print(cronJob)
     # addCronJob(cronJob)
@@ -83,5 +100,4 @@ def addRecurring(taskToAdd):
             print("CronJob requested but some info missing. Reminder: CronJob will take place {} mins before the times specifed".format(taskToAdd.cronMins))
             taskToAdd.resolveCronInconsistencies()
         addRecurCronJob(taskToAdd)
-        taskToAdd.addRecurCronJob()
     appendTaskToFile(taskToAdd,recurringTasksFile)
