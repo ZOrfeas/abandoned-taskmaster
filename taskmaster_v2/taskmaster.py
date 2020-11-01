@@ -1,8 +1,10 @@
 #!/usr/bin/python3
+from os import name
 import sys,os
 from pathlib import Path
+from sys import argv
 import FileReader
-import FIleWriter
+import FileWriter
 import OutputWriter
 import InputReader
 from Tasks import Task
@@ -50,18 +52,40 @@ def createTask(creatorArgs):
         taskToAdd = Task(True,InputReader.createRecurring(taskDets)) if isRecurring else Task(False,InputReader.createOneOff(taskDets))
     if isRecurring:
         if argAmount <= 1 or (silentMode or InputReader.askToAddRecurr(taskToAdd)):
-            FIleWriter.addRecurring(taskToAdd)
+            FileWriter.addRecurring(taskToAdd)
     else:
         if argAmount <= 1 or (silentMode or InputReader.askToAddOneOff(taskToAdd)):
-            FIleWriter.addOneOff(taskToAdd)
+            FileWriter.addOneOff(taskToAdd)
     return 0
 def printSchedule():
     print("Entered printSchedule")
-def deleteTask():
-    print("Entered deleteTask")
+def deleteTask(deleterArgs):
+    argAmount = len(deleterArgs)
+    if argAmount >= 1 and deleterArgs[0] == 'help':
+        OutputWriter.deleterHelp()
+        return 0
+    if argAmount >= 1:
+        taskToDelName = deleterArgs[0]
+        nameLocation = FileReader.findTaskLocationWithName(taskToDelName)
+        if nameLocation is None:
+            OutputWriter.wrongInputMessage(taskToDelName+' Task name does not exist','-d')
+            return 1
+    else:
+        while(True):
+            taskToDelName = InputReader.promptForTaskName("Which task would you like to delete?\n")
+            nameLocation = FileReader.findTaskLocationWithName(taskToDelName)
+            if nameLocation is not None: break
+            else: print("Task name does not exist, try again or press Ctrl-D to exit")
+    if nameLocation == recurringTasksFile:
+        FileWriter.deleteRecurrWithName(taskToDelName)
+    elif nameLocation == oneOffTasksFile:
+        FileWriter.deleteOneOffWithName(taskToDelName)
+    print("Task {} successfully deleted.".format(taskToDelName))
+    return 0
+
 def configure():
     if os.stat(confFile).st_size == 0:
-        FIleWriter.initConfFile()
+        FileWriter.initConfFile()
 
 def parseArgsAndDecide(allCmdArgs):
     if len(allCmdArgs)==0 or allCmdArgs[0] in ['-h', '--help']:
@@ -101,7 +125,7 @@ def do(allCmdArgs):
     checkAndSetUpDir()
     InputReader.setWrapUpFunc(wrapUp)
     FileReader.setFileLocations(recurringTasksFile,oneOffTasksFile,confFile)
-    FIleWriter.setFileLocations(recurringTasksFile,oneOffTasksFile,confFile)
+    FileWriter.setFileLocations(recurringTasksFile,oneOffTasksFile,confFile)
     options = FileReader.fetchConfOptions()
     return parseArgsAndDecide(allCmdArgs)
 

@@ -1,4 +1,5 @@
 import json,os,datetime
+from FileReader import fetchRecurrTaskWithName,fetchOneOffTaskWithName
 # from Tasks import Task
 
 recurringTasksFile = None
@@ -67,19 +68,19 @@ def addCronJob(cronCommand):
 def addOneOffCronJob(task):
     cronJob = craftOneOffCronJob(task)
     cronJob = makeCronSelfDelete(cronJob)
-    print(cronJob)
-    # addCronJob(cronJob)
+    # print(cronJob)
+    addCronJob(cronJob)
 
 def scheduleOneOffDeletion(task):
     cronJob = craftOneOffDeleter(task)
     cronJob = makeCronSelfDelete(cronJob)
-    print(cronJob)
-    # addCronJob(cronJob)
+    # print(cronJob)
+    addCronJob(cronJob)
 
 def addRecurCronJob(task):
     cronJobs = craftRecurCronJob(task)
-    print(cronJobs)
-    # for i in cronJobs: addCronJob(cronJobs)
+    # print(cronJobs)
+    for job in cronJobs: addCronJob(job)
 
 def appendTaskToFile(task,file):
     with open(file, 'a') as targetFile:
@@ -101,3 +102,36 @@ def addRecurring(taskToAdd):
             taskToAdd.resolveCronInconsistencies()
         addRecurCronJob(taskToAdd)
     appendTaskToFile(taskToAdd,recurringTasksFile)
+
+def deleteCronJob(job):
+    command = "crontab -l | grep -v '"+job+"' | crontab -"
+    os.system(command)
+
+def deleteRecurrCrons(task):
+    cronJobs = craftRecurCronJob(task)
+    for job in cronJobs: deleteCronJob(job)
+
+def deleteOneOffCron(task):
+    cronJob = craftOneOffCronJob(task)
+    deleteCronJob(cronJob)
+
+def deleteOneOffDeleter(task):
+    cronJob = craftOneOffDeleter(task)
+    deleteCronJob(cronJob)
+
+def deleteNameFromFile(name,file):
+    sedCommand = "sed -i '/\"name\": \""+name+"\"/d' "+file
+    os.system(sedCommand)
+
+def deleteRecurrWithName(taskName):
+    task = fetchRecurrTaskWithName(taskName)
+    deleteNameFromFile(taskName,recurringTasksFile)
+    deleteRecurrCrons(task)
+
+def deleteOneOffWithName(taskName):
+    task = fetchOneOffTaskWithName(taskName)
+    deleteNameFromFile(taskName,oneOffTasksFile)
+    deleteOneOffCron(task)
+    deleteOneOffDeleter(task)
+    
+

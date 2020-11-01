@@ -112,10 +112,11 @@ def promptForIsRecurring():
             isRecurring = True if isRecurring in ['y','yes'] else False
             return isRecurring     
 
-def promptForTaskName():
-        name = eofSafeInput("Give the task a name:\n").strip()
-        if name: return name
-        else: print("Invalid name, try again or press Ctrl-D to exit")     
+def promptForTaskName(promptString="Give the task a name:\n"):
+        while(True):
+            name = eofSafeInput(promptString).strip()
+            if name: return name
+            else: print("Invalid name, try again or press Ctrl-D to exit")     
 
 def promptForDaysTimes():
     while(True):
