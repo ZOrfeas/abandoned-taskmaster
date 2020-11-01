@@ -80,7 +80,7 @@ def deleteTask(deleterArgs):
         FileWriter.deleteRecurrWithName(taskToDelName)
     elif nameLocation == oneOffTasksFile:
         FileWriter.deleteOneOffWithName(taskToDelName)
-    print("Task {} successfully deleted.".format(taskToDelName))
+    print("Task '{}' successfully deleted.".format(taskToDelName))
     return 0
 
 def configure():

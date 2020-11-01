@@ -105,7 +105,7 @@ def verifyAndPrepOneOffArgs(argsToCheck):
 
 def promptForIsRecurring():
     while(True):
-        isRecurring = eofSafeInput("Is it a recurring task?(Y/n):\n").strip()
+        isRecurring = eofSafeInput("Is it a recurring task?(Y/n):\n").strip().lower()
         if isRecurring not in ['y','n','yes','no']:
             print("Invalid answer, try again or press Ctrl-D to exit")
         else:

@@ -1,5 +1,4 @@
 import json,subprocess
-from Tasks import Task
 recurringTasksFile = None
 oneOffTasksFile = None
 confFile = None
@@ -38,11 +37,11 @@ def findTaskLocationWithName(taskName):
 
 def fetchRecurrTaskWithName(taskName):
     grepProcess = subprocess.run(['grep','"name": "'+taskName+'"',recurringTasksFile], stdout=subprocess.PIPE, universal_newlines=True)
-    taskString = grepProcess.stdout.splitlines()
+    taskString = grepProcess.stdout.splitlines()[0]
     taskDict = json.loads(taskString)
-    return Task(True,taskDict)
+    return taskDict
 def fetchOneOffTaskWithName(taskName):
     grepProcess = subprocess.run(['grep','"name": "'+taskName+'"',oneOffTasksFile], stdout=subprocess.PIPE, universal_newlines=True)
-    taskString = grepProcess.stdout.splitlines()
+    taskString = grepProcess.stdout.splitlines()[0]
     taskDict = json.loads(taskString)
-    return Task(False,taskDict)
+    return taskDict

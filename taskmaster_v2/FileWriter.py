@@ -1,6 +1,6 @@
 import json,os,datetime
 from FileReader import fetchRecurrTaskWithName,fetchOneOffTaskWithName
-# from Tasks import Task
+from Tasks import Task
 
 recurringTasksFile = None
 oneOffTasksFile = None
@@ -33,7 +33,7 @@ def craftOneOffDeleter(task):
     taskDate = datetime.datetime.strptime(task.date, "%d-%m-%Y")
     taskDelTime = taskDate + datetime.timedelta(days=1)
     [day,month] = datetime.datetime.strftime(taskDelTime, "%-d|%-m").split('|')
-    cronDeleter = "taskmaster.py --delete s \"{}\"".format(task.name)
+    cronDeleter = "taskmaster.py --delete s {}".format(task.name)
     cronJob = "* * {} {} * {}".format(day,month,cronDeleter)
     return cronJob
 
@@ -44,21 +44,23 @@ def craftRecurCronJob(task):
     cronAction = task.cronAction
     cronMins = task.cronMins
     for i in task.daysTimes:
-        print(i)
+        # print(i)
         dayObject = datetime.datetime.strptime("Mon", "%a")
         dayObject = dayObject + datetime.timedelta(days=daysFixer[i[0]])
         [hour,mins] = i[1].split(':')
         realTaskTime = dayObject + datetime.timedelta(hours=int(hour),minutes=int(mins))
         realCronTime = realTaskTime - datetime.timedelta(minutes=int(cronMins))
         [mins,hour,day] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%a").split('|')
-        print(mins,hour,day)
+        # print(mins,hour,day)
         day = days[day.lower()]
         cronJob = "{} {} * * {} {}".format(mins,hour,day,cronAction)
         cronJobs.append(cronJob)
     return cronJobs
 
 def makeCronSelfDelete(cronCommand):
-    selfDeletingCron = cronCommand + "; crontab -l | grep -v '"+cronCommand+"' | crontab -"
+    grepString = cronCommand.replace('*', '\*')
+    # grepString = cronCommand
+    selfDeletingCron = cronCommand + "; crontab -l | grep -v \""+grepString+"\" | crontab -"
     return selfDeletingCron
 
 def addCronJob(cronCommand):
@@ -104,7 +106,10 @@ def addRecurring(taskToAdd):
     appendTaskToFile(taskToAdd,recurringTasksFile)
 
 def deleteCronJob(job):
-    command = "crontab -l | grep -v '"+job+"' | crontab -"
+    grepString = job.replace('*','\*')
+    # grepString = job
+    command = "crontab -l | grep -v \""+grepString+"\" | crontab -"
+    print(command)
     os.system(command)
 
 def deleteRecurrCrons(task):
@@ -124,12 +129,12 @@ def deleteNameFromFile(name,file):
     os.system(sedCommand)
 
 def deleteRecurrWithName(taskName):
-    task = fetchRecurrTaskWithName(taskName)
+    task = Task(True,fetchRecurrTaskWithName(taskName))
     deleteNameFromFile(taskName,recurringTasksFile)
     deleteRecurrCrons(task)
 
 def deleteOneOffWithName(taskName):
-    task = fetchOneOffTaskWithName(taskName)
+    task = Task(False,fetchOneOffTaskWithName(taskName))
     deleteNameFromFile(taskName,oneOffTasksFile)
     deleteOneOffCron(task)
     deleteOneOffDeleter(task)
