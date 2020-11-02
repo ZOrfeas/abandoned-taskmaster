@@ -112,7 +112,7 @@ def promptForIsRecurring():
             isRecurring = True if isRecurring in ['y','yes'] else False
             return isRecurring     
 
-def promptForTaskName(promptString="Give the task a name:\n"):
+def promptForTaskName(promptString="Give the task a name('_' instead of spaces):\n"):
         while(True):
             name = eofSafeInput(promptString).strip()
             if name: return name

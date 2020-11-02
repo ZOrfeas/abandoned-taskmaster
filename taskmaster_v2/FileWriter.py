@@ -33,7 +33,7 @@ def craftOneOffDeleter(task):
     taskDate = datetime.datetime.strptime(task.date, "%d-%m-%Y")
     taskDelTime = taskDate + datetime.timedelta(days=1)
     [day,month] = datetime.datetime.strftime(taskDelTime, "%-d|%-m").split('|')
-    cronDeleter = "taskmaster.py --delete s {}".format(task.name)
+    cronDeleter = "taskmaster.py --delete {}".format(task.name)
     cronJob = "* * {} {} * {}".format(day,month,cronDeleter)
     return cronJob
 
@@ -58,9 +58,9 @@ def craftRecurCronJob(task):
     return cronJobs
 
 def makeCronSelfDelete(cronCommand):
-    grepString = cronCommand.replace('*', '\*')
-    # grepString = cronCommand
-    selfDeletingCron = cronCommand + "; crontab -l | grep -v \""+grepString+"\" | crontab -"
+    # grepString = cronCommand.replace('*', '\*')
+    grepString = cronCommand
+    selfDeletingCron = cronCommand + "; crontab -l | grep -v -F \""+grepString+"\" | crontab -"
     return selfDeletingCron
 
 def addCronJob(cronCommand):
@@ -106,9 +106,9 @@ def addRecurring(taskToAdd):
     appendTaskToFile(taskToAdd,recurringTasksFile)
 
 def deleteCronJob(job):
-    grepString = job.replace('*','\*')
-    # grepString = job
-    command = "crontab -l | grep -v \""+grepString+"\" | crontab -"
+    # grepString = job.replace('*','\*')
+    grepString = job
+    command = "crontab -l | grep -v -F \""+grepString+"\" | crontab -"
     print(command)
     os.system(command)
 
