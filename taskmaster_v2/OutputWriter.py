@@ -1,4 +1,5 @@
 import textwrap as tw
+import FileReader
 
 class color:
    purple = '\033[95m'
@@ -68,7 +69,7 @@ def printCronDesc(task):
         print(color.red+"CronJob:"+color.end, end=' ')
         print("{} mins before the task's time '{}' will be executed.".format(cronActionMins,cronAction))
     print(color.underline+"Details:"+color.end, end=' ')
-    print(tw.fill(desc,80)) if desc is not None else print()
+    print(tw.fill(desc,50)) if desc is not None else print()
 
 def prettyPrintRecurr(taskToPrint):
     print()

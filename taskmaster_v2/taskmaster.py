@@ -57,8 +57,31 @@ def createTask(creatorArgs):
         if argAmount <= 1 or (silentMode or InputReader.askToAddOneOff(taskToAdd)):
             FileWriter.addOneOff(taskToAdd)
     return 0
-def printSchedule():
-    print("Entered printSchedule")
+
+def printSchedule(printerArgs):
+    argAmount = len(printerArgs)
+    if argAmount >= 1 and printerArgs[0] == 'help':
+        OutputWriter.printerHelp()
+        return 0
+    if argAmount >= 1:
+        if printerArgs[0] not in ['week','weekly']:
+            request = InputReader.checkAndPrepDateString(printerArgs[0])
+            if request is None:
+                OutputWriter.wrongInputMessage(printerArgs[0],'-s')
+                return 1
+        else:
+            request = printerArgs[0]
+    else:
+        OutputWriter.printerOptions()
+        request = InputReader.getPrinterRequest()
+    if request == 'week':
+        OutputWriter.printUpcomingWeek()
+    elif request == 'weekly':
+        OutputWriter.printWeeklyTasks()
+    else:
+        OutputWriter.printRequestedDate(request)
+    return 0
+
 def deleteTask(deleterArgs):
     argAmount = len(deleterArgs)
     if argAmount >= 1 and deleterArgs[0] == 'help':
@@ -86,6 +109,7 @@ def deleteTask(deleterArgs):
 def configure():
     if os.stat(confFile).st_size == 0:
         FileWriter.initConfFile()
+    return 0
 
 def parseArgsAndDecide(allCmdArgs):
     if len(allCmdArgs)==0 or allCmdArgs[0] in ['-h', '--help']:
@@ -106,8 +130,8 @@ def parseArgsAndDecide(allCmdArgs):
 def findOrMakeAFile(path):
     if not os.path.exists(path):
         open(path,'w').close()
-        return 1
-    return 0
+        return True
+    return False
 
 def checkAndSetUpDir():
     if not os.path.exists(tasksFolderLocation):
