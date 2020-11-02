@@ -44,21 +44,18 @@ def craftRecurCronJob(task):
     cronAction = task.cronAction
     cronMins = task.cronMins
     for i in task.daysTimes:
-        # print(i)
         dayObject = datetime.datetime.strptime("Mon", "%a")
         dayObject = dayObject + datetime.timedelta(days=daysFixer[i[0]])
         [hour,mins] = i[1].split(':')
         realTaskTime = dayObject + datetime.timedelta(hours=int(hour),minutes=int(mins))
         realCronTime = realTaskTime - datetime.timedelta(minutes=int(cronMins))
         [mins,hour,day] = datetime.datetime.strftime(realCronTime, "%-M|%-H|%a").split('|')
-        # print(mins,hour,day)
         day = days[day.lower()]
         cronJob = "{} {} * * {} {}".format(mins,hour,day,cronAction)
         cronJobs.append(cronJob)
     return cronJobs
 
 def makeCronSelfDelete(cronCommand):
-    # grepString = cronCommand.replace('*', '\*')
     grepString = cronCommand
     selfDeletingCron = cronCommand + "; crontab -l | grep -v -F \""+grepString+"\" | crontab -"
     return selfDeletingCron
@@ -70,18 +67,15 @@ def addCronJob(cronCommand):
 def addOneOffCronJob(task):
     cronJob = craftOneOffCronJob(task)
     cronJob = makeCronSelfDelete(cronJob)
-    # print(cronJob)
     addCronJob(cronJob)
 
 def scheduleOneOffDeletion(task):
     cronJob = craftOneOffDeleter(task)
     cronJob = makeCronSelfDelete(cronJob)
-    # print(cronJob)
     addCronJob(cronJob)
 
 def addRecurCronJob(task):
     cronJobs = craftRecurCronJob(task)
-    # print(cronJobs)
     for job in cronJobs: addCronJob(job)
 
 def appendTaskToFile(task,file):
@@ -106,10 +100,8 @@ def addRecurring(taskToAdd):
     appendTaskToFile(taskToAdd,recurringTasksFile)
 
 def deleteCronJob(job):
-    # grepString = job.replace('*','\*')
     grepString = job
     command = "crontab -l | grep -v -F \""+grepString+"\" | crontab -"
-    print(command)
     os.system(command)
 
 def deleteRecurrCrons(task):
