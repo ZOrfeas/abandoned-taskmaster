@@ -1,5 +1,4 @@
 import textwrap as tw
-import FileReader
 
 class color:
    purple = '\033[95m'
@@ -54,6 +53,13 @@ def helpMessage():
     print('orfeas.zografos@gmail.com for if you find I f\'ed something up too much')
     print('or to tell me how cool this is(\'nt)')
 
+def creatorHelp():
+    print()
+def printerHelp():
+    print()
+def deleterHelp():
+    print()
+
 def printDaysTimes(daysTimes):
     last = len(daysTimes) - 1
     for i,pair in enumerate(daysTimes):
@@ -86,3 +92,13 @@ def prettyPrintOneOff(taskToPrint):
     print('',end='') if taskToPrint.time is None else print(' '+taskToPrint.time, end='')
     print("(deadline!)") if taskToPrint.isDeadlined == 'dl' else print()
     printCronDesc(taskToPrint)
+
+def printerOptions():
+    print()
+
+def printUpcomingWeek(tasksList):
+    print()
+def printWeeklyTasks(tasksList):
+    print()
+def printRequestedDate(tasksList):
+    print()

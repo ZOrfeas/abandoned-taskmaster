@@ -75,11 +75,14 @@ def printSchedule(printerArgs):
         OutputWriter.printerOptions()
         request = InputReader.getPrinterRequest()
     if request == 'week':
-        OutputWriter.printUpcomingWeek()
+        tasks = list(map(lambda x:Task(*x), FileReader.fetchUpComingWeekTaskDictsAndTypes()))
+        OutputWriter.printUpcomingWeek(tasks)
     elif request == 'weekly':
-        OutputWriter.printWeeklyTasks()
+        tasks = list(map(lambda x:Task(*x), FileReader.fetchWeeklyTaskDictsAndTypes()))
+        OutputWriter.printWeeklyTasks(tasks)
     else:
-        OutputWriter.printRequestedDate(request)
+        tasks = list(map(lambda x:Task(*x), FileReader.fetchDateTaskDictsAndTypes(request)))
+        OutputWriter.printRequestedDate(tasks)
     return 0
 
 def deleteTask(deleterArgs):
