@@ -83,8 +83,6 @@ def printSchedule(printerArgs):
         tasks = list(map(taskifyList, FileReader.fetchWeeklyTaskDictsAndTypes()))
         OutputWriter.printWeeklyTasks(tasks)
     else:
-        test = lambda x:x+1
-
         tasks = taskifyList(FileReader.fetchDateTaskDictsAndTypes(request))
         OutputWriter.printRequestedDate(tasks)
     return 0
