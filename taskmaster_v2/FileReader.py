@@ -1,4 +1,4 @@
-import json,subprocess
+import json,subprocess,datetime
 recurringTasksFile = None
 oneOffTasksFile = None
 confFile = None
@@ -45,3 +45,37 @@ def fetchOneOffTaskWithName(taskName):
     taskString = grepProcess.stdout.splitlines()[0]
     taskDict = json.loads(taskString)
     return taskDict
+
+def fetchDateOneOffs(dateString):
+    grepProcess = subprocess.run(['grep','"date": "'+dateString+'"',oneOffTasksFile], stdout=subprocess.PIPE, universal_newlines=True)
+    taskList = grepProcess.stdout.splitlines()
+    taskDictsTypes = list(map(lambda x:(False,json.loads(x)), taskList))
+    return taskDictsTypes
+
+def fetchDayRecurrs(dayString):
+    grepProcess = subprocess.run(['grep','\["'+dayString+'"',recurringTasksFile], stdout=subprocess.PIPE, universal_newlines=True)
+    taskList = grepProcess.stdout.splitlines()
+    taskDictsTypes = list(map(lambda x:(True,json.loads(x)), taskList))
+    return taskDictsTypes
+
+def fetchDateTaskDictsAndTypes(dateString):
+    dayOfWeek = datetime.datetime.strptime(dateString, "%d-%m-%Y").strftime("%a").lower()
+    oneOffs = fetchDateOneOffs(dateString)
+    recurrs = fetchDayRecurrs(dayOfWeek)
+    return oneOffs + recurrs
+
+def fetchUpComingWeekTaskDictsAndTypes():
+    todayObj = datetime.date.today()
+    weekTaskList = []
+    for offset in range(0,7):
+        targetDateObj = todayObj + datetime.timedelta(days=offset)
+        targetDate = targetDateObj.strftime("%d-%m-%Y")
+        weekTaskList.append(fetchDateTaskDictsAndTypes(targetDate))
+    return weekTaskList
+    
+def fetchWeeklyTaskDictsAndTypes():
+    daysOfWeek = {0:"mon",1:"tue",2:"wed",3:"thu",4:"fri",5:"sat",6:"sun"}
+    weeklyTaskList = []
+    for day in range(0,7):
+        weeklyTaskList.append(fetchDayRecurrs(daysOfWeek[day]))
+    return weeklyTaskList

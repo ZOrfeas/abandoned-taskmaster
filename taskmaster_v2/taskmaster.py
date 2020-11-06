@@ -59,6 +59,8 @@ def createTask(creatorArgs):
     return 0
 
 def printSchedule(printerArgs):
+    taskifyTuple = lambda x:Task(*x)
+    taskifyList = lambda x:list(map(taskifyTuple, x))
     argAmount = len(printerArgs)
     if argAmount >= 1 and printerArgs[0] == 'help':
         OutputWriter.printerHelp()
@@ -75,13 +77,15 @@ def printSchedule(printerArgs):
         OutputWriter.printerOptions()
         request = InputReader.getPrinterRequest()
     if request == 'week':
-        tasks = list(map(lambda x:Task(*x), FileReader.fetchUpComingWeekTaskDictsAndTypes()))
+        tasks = list(map(taskifyList, FileReader.fetchUpComingWeekTaskDictsAndTypes()))
         OutputWriter.printUpcomingWeek(tasks)
     elif request == 'weekly':
-        tasks = list(map(lambda x:Task(*x), FileReader.fetchWeeklyTaskDictsAndTypes()))
+        tasks = list(map(taskifyList, FileReader.fetchWeeklyTaskDictsAndTypes()))
         OutputWriter.printWeeklyTasks(tasks)
     else:
-        tasks = list(map(lambda x:Task(*x), FileReader.fetchDateTaskDictsAndTypes(request)))
+        test = lambda x:x+1
+
+        tasks = taskifyList(FileReader.fetchDateTaskDictsAndTypes(request))
         OutputWriter.printRequestedDate(tasks)
     return 0
 

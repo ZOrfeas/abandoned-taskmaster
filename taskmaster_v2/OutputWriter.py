@@ -96,9 +96,12 @@ def prettyPrintOneOff(taskToPrint):
 def printerOptions():
     print()
 
+
+# def sortDateTasks(dateList):    
+
 def printUpcomingWeek(tasksList):
-    print()
+    print(tasksList)
 def printWeeklyTasks(tasksList):
-    print()
+    print(tasksList)
 def printRequestedDate(tasksList):
-    print()
+    print(tasksList)

@@ -130,5 +130,3 @@ def deleteOneOffWithName(taskName):
     deleteNameFromFile(taskName,oneOffTasksFile)
     deleteOneOffCron(task)
     deleteOneOffDeleter(task)
-    
-
