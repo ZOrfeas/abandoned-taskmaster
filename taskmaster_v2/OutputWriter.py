@@ -1,4 +1,6 @@
+from datetime import date, datetime, timedelta
 import textwrap as tw
+import copy
 
 class color:
    purple = '\033[95m'
@@ -94,13 +96,42 @@ def prettyPrintOneOff(taskToPrint):
     printCronDesc(taskToPrint)
 
 def printerOptions():
-    print()
+    print("Implement!")
 
+def prepForSort(taskList,dateObject):
+    dayOfWeek = dateObject.strftime("%a").lower()
+    returnableList = []
+    for task in taskList:
+        if task.isRecurring:
+            for pair in task.daysTimes:
+                if pair[0] == dayOfWeek:
+                    temp = copy.deepcopy(task)
+                    temp.daysTimes = [pair]
+                    returnableList.append(temp)
+        else:
+            returnableList.append(task)
+    return returnableList
+                
+def sortKey(task):
+    if task.isRecurring:
+        if len(task.daysTimes[0]) == 1: return -1
+        else: return datetime.strptime(task.daysTimes[0][1], "%H:%M").strftime("%H:%M")
+    else:
+        if task.time is None: return -1
+        else: return datetime.strptime(task.time, "%H:%M").strftime("%H:%M")
 
-# def sortDateTasks(dateList):    
+def sortADaysTasks(taskList):
+    '''Sort by time a list of tasks on a day'''
+    sortedList = sorted(taskList, sortKey)
+    return sortedList
 
 def printUpcomingWeek(tasksList):
-    print(tasksList)
+    today = datetime.today()
+    for num,oneDay in enumerate(tasksList):
+        temp = prepForSort(oneDay,today + timedelta(days=num))
+        sortedTemp = sortADaysTasks(temp)
+        
+
 def printWeeklyTasks(tasksList):
     print(tasksList)
 def printRequestedDate(tasksList):
